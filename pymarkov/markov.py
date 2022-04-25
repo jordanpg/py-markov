@@ -52,10 +52,10 @@ class Markov:
     def process_text(self, msg: str):
         """Process a string, adding all links"""
         # Extract each sentence
-        sentences = [s.strip() for s in re.split(r'[.!?-]', msg) if len(s.strip()) > 0]
+        sentences = [s.strip() for s in re.split(r'[.!?]', msg) if len(s.strip()) > 0]
         # Extract each word, inserting the sentence start and end flags
         # Convert sentence to lowercase to avoid differentiating between Aaa, aAa, aaa, etc.
-        sentence_words = [[self.start_flag, *re.split('[ ,]',sentence.lower()), self.end_flag] for sentence in sentences]
+        sentence_words = [[self.start_flag, *[w for w in re.split('[ ,]',sentence.lower()) if len(w) > 0], self.end_flag] for sentence in sentences]
         # Process each sentence
         for words in sentence_words:
             # Exit if there aren't any pairs to link
