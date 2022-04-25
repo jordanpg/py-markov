@@ -1,3 +1,4 @@
+import re
 from typing import Union
 from pymarkov import node
 
@@ -29,14 +30,18 @@ class Markov:
 
         na.add_link(nb)
     
-    def generate(self, max_len: Union[int, None] = 25):
-        """Generate a sentence of max_len maximum length. If max_len is None, length is unlimited. Unlimited length may result in an infinite loop."""
+    def generate(self, max_len: Union[int, None] = 25, weighted = True):
+        """Generate a sentence of max_len maximum length. If max_len is None, length is unlimited.
+        Unlimited length may result in an infinite loop.
+        
+        If weighted is False, then all word links will be weighted equally.
+        """
         next = self.to_node(self.start_flag)
         end = self.to_node(self.end_flag)
         
         choices: list = []
         while max_len is None or len(choices) <= max_len:
-            next = next.pick_next() # Pick the next node
+            next = next.pick_next(weighted) # Pick the next node
             # Break if we've reached the end
             if not next or next is end:
                 break
@@ -47,10 +52,10 @@ class Markov:
     def process_text(self, msg: str):
         """Process a string, adding all links"""
         # Extract each sentence
-        sentences = [s.strip() for s in msg.split('.') if len(s.strip()) > 0]
+        sentences = [s.strip() for s in re.split(r'[.!?-]', msg) if len(s.strip()) > 0]
         # Extract each word, inserting the sentence start and end flags
         # Convert sentence to lowercase to avoid differentiating between Aaa, aAa, aaa, etc.
-        sentence_words = [[self.start_flag, *sentence.lower().split(), self.end_flag] for sentence in sentences]
+        sentence_words = [[self.start_flag, *re.split('[ ,]',sentence.lower()), self.end_flag] for sentence in sentences]
         # Process each sentence
         for words in sentence_words:
             # Exit if there aren't any pairs to link

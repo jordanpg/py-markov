@@ -2,7 +2,7 @@ import random
 from typing import Any
 
 class Node:
-    """Represents a node and its connections to other nodes"""
+    """Represents a node and its weighted connections to other nodes"""
     def __init__(self, value: Any, links: dict['Node', int] = None):
         self.value = value
         self._links = links or {}
