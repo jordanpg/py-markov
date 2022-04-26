@@ -1,13 +1,21 @@
 from genericpath import exists
 import tkinter as tk
-from tkinter import BOTH, HORIZONTAL, LEFT, TOP, Y, X, StringVar, ttk
+from tkinter import BOTH, END, HORIZONTAL, LEFT, TOP, Y, X, IntVar, StringVar, ttk
 from tkinter import filedialog
 from tkinter.font import BOLD
 from pymarkov import markov
 from pymarkov.vis import visualize_markov
 
-def build_chat(parent, m: markov.Markov):
+m: markov.Markov = markov.Markov(2)
+
+def replace_markov(order: int):
+    global m
+    m = markov.Markov(order)
+
+def build_chat(parent):
     """Build chat UI"""
+    global m
+    
     f = ttk.Frame(parent)
     f.pack(expand=True,fill=BOTH)
     logframe = ttk.Frame(f)
@@ -31,11 +39,13 @@ def build_chat(parent, m: markov.Markov):
         
     def chat_respond(_):
         """Handle chatbot text entry and response"""
+        global m
+        # print(m)
         inp = chat_input.get().strip()
         if len(inp) > 0:
-            m.process_text(inp)
+            m.process_text_ngram(inp)
             add_line(f'You: {inp}')
-        add_line(f"AI: {' '.join(m.generate())}")
+        add_line(f"AI: {m.generate_text_ngram(25)}")
         chat_input.set('')
         
     add_line('Start typing to train and chat with the bot! Or, press enter to make the AI generate a sentence.')
@@ -43,8 +53,10 @@ def build_chat(parent, m: markov.Markov):
     
     return f, add_line
 
-def build_train(parent, m: markov.Markov):
+def build_train(parent):
     """Build training window"""
+    global m
+    
     f = ttk.Frame(parent)
     f.pack(expand=True,fill=BOTH)
     
@@ -70,6 +82,24 @@ def build_train(parent, m: markov.Markov):
     status = ttk.Label(f, textvariable=statustext)
     status.pack(expand=True)
     
+    orderf = ttk.Frame(f)
+    orderf.pack(expand=True)
+    orderl = ttk.Label(orderf, text="Order ")
+    order = IntVar(value=2)
+    
+    def order_set():
+        if order.get() < 1:
+            statustext.set('Order must be greater than zero!')
+            return
+        replace_markov(order.get())
+        statustext.set(f'Model remade with order k={order.get()}')
+    
+    orderentry = ttk.Entry(orderf, textvariable=order)
+    orderbtn = ttk.Button(orderf, command=order_set, text="Remake Model (TRAINING ERASED)")
+    orderl.pack(side=LEFT)
+    orderentry.pack(side=LEFT)
+    orderbtn.pack(side=LEFT)
+    
     visbtn = ttk.Button(f, text='Visualize', command=(lambda: visualize_markov(m)))
     visbtn.pack(expand=True)
     
@@ -84,7 +114,7 @@ def build_train(parent, m: markov.Markov):
             txt = file.readlines()
             statustext.set('Processing...')
             for line in txt:
-                m.process_text(line)
+                m.process_text_ngram(line)
         len_b = len(m)
         statustext.set(f"Added {len_b - len_a} nodes!")
         
@@ -92,23 +122,51 @@ def build_train(parent, m: markov.Markov):
     
     return f
 
-def build_gui(m: markov.Markov):
+def build_text(parent):
+    """Build text generator"""
+    global m
+    f = ttk.Frame(parent)
+    f.pack(expand=True, fill=BOTH)
+    
+    lf = ttk.Frame(f)
+    lf.pack(expand=True, fill=BOTH)
+    text = tk.Text(lf)
+    yscroll = ttk.Scrollbar(lf, orient='vertical', command=text.yview)
+    text['yscrollcommand'] = yscroll.set
+    text.pack(side=LEFT, fill=BOTH, expand=True)
+    yscroll.pack(side=LEFT, fill=Y)
+    
+    def generate():
+        global m
+        out = m.generate_text_ngram(50,text.get('1.0',END))
+        text.insert(END, out + ' ')
+        
+    pf = ttk.Frame(f)
+    pf.pack(fill=X)
+    gen_btn = ttk.Button(pf, text="Generate", command=generate)
+    gen_btn.pack(side=LEFT,fill=X,expand=True)
+    
+    return f
+
+def build_gui():
     """Build main window"""
     root = tk.Tk()
     root.title("Markov Experiments")
     nb = ttk.Notebook(root)
-    chat, add_line = build_chat(nb, m)
-    train = build_train(nb, m)
+    chat, add_line = build_chat(nb)
+    train = build_train(nb)
+    text = build_text(nb)
     nb.add(chat, text='Chatbot')
+    nb.add(text, text='Prompt')
     nb.add(train, text='Training')
+    
     
     nb.pack(expand=True,fill=BOTH)
     
     return root, add_line
     
 def main():
-    m = markov.Markov()
-    root, add_line = build_gui(m)
+    root, add_line = build_gui()
     
     root.mainloop()
     
