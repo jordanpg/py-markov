@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 
 def visualize_markov(m: markov.Markov):
     """Create visualization using pyvis"""
-    net = Network(height='100%',width='100%',bgcolor='#222222',font_color='white')
+    net = Network(height='100%',width='100%',bgcolor='#222222',font_color='white',directed=True)
     net.force_atlas_2based()
     
     for id in m._nodemap:

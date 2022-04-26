@@ -1,4 +1,5 @@
 from genericpath import exists
+import os
 import tkinter as tk
 from tkinter import BOTH, END, HORIZONTAL, LEFT, TOP, Y, X, IntVar, StringVar, ttk
 from tkinter import filedialog
@@ -84,15 +85,16 @@ def build_train(parent):
     
     orderf = ttk.Frame(f)
     orderf.pack(expand=True)
-    orderl = ttk.Label(orderf, text="Order ")
+    orderl = ttk.Label(orderf, text="Order (-1 for sentence model) ")
     order = IntVar(value=2)
     
     def order_set():
-        if order.get() < 1:
-            statustext.set('Order must be greater than zero!')
+        o = order.get()
+        if o < 1 and o != -1:
+            statustext.set('Order must be greater than zero or -1!')
             return
-        replace_markov(order.get())
-        statustext.set(f'Model remade with order k={order.get()}')
+        replace_markov(o)
+        statustext.set(f'Model remade with order k={o}' + ' (Sentence model)' if o == -1 else '')
     
     orderentry = ttk.Entry(orderf, textvariable=order)
     orderbtn = ttk.Button(orderf, command=order_set, text="Remake Model (TRAINING ERASED)")
@@ -110,11 +112,16 @@ def build_train(parent):
         
         len_a = len(m)
         statustext.set('Reading...')
-        with open(path, 'r') as file:
-            txt = file.readlines()
-            statustext.set('Processing...')
-            for line in txt:
+        size = os.path.getsize(path)
+        prog = 0
+        with open(path, 'r', encoding='utf-8') as file:
+            line = file.readline()
+            statustext.set(f'Processing {prog/size}, {prog} of {size} ...')
+            while line:
                 m.process_text_ngram(line)
+                prog += len(line.encode('utf-8'))
+                statustext.set(f'Processing {prog/size}, {prog} of {size}...')
+                line = file.readline()
         len_b = len(m)
         statustext.set(f"Added {len_b - len_a} nodes!")
         

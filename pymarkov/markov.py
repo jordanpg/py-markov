@@ -63,7 +63,7 @@ class Markov:
                 break
             choices.append(next.value)
             
-        return choices
+        return ' '.join(choices)
     
     def process_text(self, msg: str):
         """Process a string, adding all links"""
@@ -86,6 +86,10 @@ class Markov:
                 
     def process_text_ngram(self, msg:str):
         """Process a string using ngrams"""
+        if self.order == -1:
+            self.process_text(msg)
+            return
+        
         # Extract each word
         words = [w for w in re.split(r'[,\s]', msg.lower()) if len(w) > 0]
         # Initialize rolling ngram
@@ -98,6 +102,9 @@ class Markov:
             
     def generate_text_ngram(self, max_len: int, prompt: str = None):
         """Generate text with max_len maximum words, optionally starting with prompt"""
+        if self.order == -1:
+            return self.generate(max_len=max_len)
+        
         choices: list[str] = []
         if prompt is not None:
             # Add our input to the beginning
